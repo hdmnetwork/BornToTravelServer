@@ -1,0 +1,29 @@
+services:
+  redis:
+    container_name: cache
+    image: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis:/data
+    # environment:
+    #   - REDIS_PASSWORD=TrouveMotDePasse
+    deploy:  # 'deploy' doit être sous le service
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    restart: always  # 'restart' doit être sous le service
+    # user: admin  # Décommentez et modifiez si nécessaire
+    logging:  # 'logging' doit être sous le service
+      driver: json-file
+      options:
+        max-size: "200k"
+        max-file: "10"
+
+volumes:
+  redis:
+    driver: local
