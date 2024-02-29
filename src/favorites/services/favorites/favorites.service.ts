@@ -1,3 +1,5 @@
+//favorites.services.ts
+
 import { BadRequestException, ConflictException, Inject, Injectable, InternalServerErrorException, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { AllPlacesType } from 'src/places/type/AllPlacesDataType.type';
@@ -173,42 +175,62 @@ export class FavoritesService {
   }
 
   /**
-   * Retourne la place favorite d'un utilisateur supprimée de ses favoris.
-   * @param placeId - ID du lieu à supprimer des favoris.
-   * @param id - ID de l'utilisateur dont le lieu doit être supprimé des favoris.
-   * @Returns - Retourner le lieu supprimé des favoris.
-   */
-  async deletePlaceFromFavorites(placeId: string, userId: string): Promise<{message: string}>{
-    try{
-      // Nous devons d'abord trouver l'association entre l'utilisateur et le lieu en utilisant la méthode findOne.
+ * Retourne la place favorite d'un utilisateur supprimée de ses favoris.
+ * @param id - ID du lieu à supprimer des favoris.
+ * @param userId - ID de l'utilisateur dont le lieu doit être supprimé des favoris.
+ * @returns - Retourner le lieu supprimé des favoris.
+ */
+  async deletePlaceFromFavorites(id: string, userId: string): Promise<{ message: string }> {
+    try {
+      console.log("Attempting to delete place with ID:", id, "for user ID:", userId);
+  
+      // Check if the association exists
       const existingAssociation: FavoritePlace = await this.favoritePlaceRepository.findOne({
-        where: { user: { id: userId }, place: { id: placeId }  },
+        where: { user: { id: userId }, place: { id } },
       });
-
-      if(!existingAssociation){
-        // Si l'association n'existe pas, nous ne pouvons pas supprimer le lieu des favoris.
+  
+      console.log("Existing Association:", existingAssociation);
+  
+      if (!existingAssociation) {
+        console.log("Association not found. Cannot delete.");
         throw new ConflictException(`Vous ne pouvez pas supprimer ce lieu`);
       }
-
+  
+      console.log("Association found. Deleting...");
+  
+      // Remove the association
       await this.favoritePlaceRepository.remove(existingAssociation);
-
-
-      // Vérifier s'il y a d'autres utilisateurs ayant ajouté ce lieu en favoris.
+  
+      console.log("Association deleted successfully.");
+  
+      // Check if there are any remaining associations for the place
       const remainingAssociation: FavoritePlace[] = await this.favoritePlaceRepository.find({
-        where: { place: { id: placeId }, },
+        where: { place: { id } },
       });
-
-      // Si aucun autre utilisateur n'a ajouté ce lieu en favoris, supprimez-le de la base de données.
-      if(remainingAssociation.length === 0){
-        await this.placeRepository.delete(placeId);
+  
+      console.log("Remaining Associations:", remainingAssociation);
+  
+      if (remainingAssociation.length === 0) {
+        console.log("No remaining associations. Deleting place...");
+  
+        // Remove the place if no remaining associations
+        await this.placeRepository.delete(id);
+  
+        console.log("Place deleted successfully.");
+      } else {
+        console.log("Remaining associations found. Not deleting place.");
       }
-
+  
       return { message: 'Place supprimée des favoris' };
-    }catch(err){
-      if(err instanceof ConflictException || err instanceof UnauthorizedException){
+    } catch (err) {
+      console.error("Error during place deletion:", err);
+  
+      if (err instanceof ConflictException || err instanceof UnauthorizedException) {
         throw err;
       }
-      throw new InternalServerErrorException(`Erreur serveur au moment de la suppression: ${err}`)
+  
+      throw new InternalServerErrorException(`Erreur serveur au moment de la suppression: ${err}`);
     }
   }
+  
 }

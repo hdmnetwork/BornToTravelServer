@@ -1,3 +1,5 @@
+//favorites.controller.ts
+
 import {
   CacheInterceptor,
   CacheKey,
@@ -145,11 +147,11 @@ export class FavoritesController {
   @Get("showFavorites/:id")
   async getAllFavoriteByUser(@Param("id", ParseUUIDPipe) id: string, ) {
       try {
-        console.log("Je call la méthode getAllFavorites du service Favorite BORDELLLLLL !!");
+        console.log("");
 
         const favorites = await this.favoritesService.getAllFavoritePlacesByUser(id);
         return instanceToPlain(favorites, {
-          excludePrefixes: ['id', 'placeId'],
+          //excludePrefixes: ['id'],
         });
       } catch (err) {
           if (err instanceof NotFoundException) {
@@ -161,26 +163,24 @@ export class FavoritesController {
 
   /**
    * Supprime un lieu des favoris d'un utilisateur.
-   * @param placeId - Identifiant du lieu à supprimer des favoris.
+   * @param id - Identifiant du lieu à supprimer des favoris.
    * @param req - Objet Request contenant les informations de l'utilisateur authentifié.
    * @returns Un message de confirmation ou une erreur en cas d'échec.
    */
   @UseGuards(AuthGuard, RefreshMiddleware)
-  @Delete('delete/:placeId')
-  async deletePlaceFromFavorites(
-      @Param("placeId", ParseUUIDPipe) placeId: string,
-      @Req() req: AuthRequest,
-  ): Promise < {
-      message: string;
-  } > {
-      try {
-          console.log("JE TENTE DE DELETE UN LIEUX FDP !!!!!")
-          return await this.favoritesService.deletePlaceFromFavorites(placeId, req.user.id)
-      } catch (err) {
-          if (err instanceof ConflictException || err instanceof UnauthorizedException) {
-              throw err;
-          }
-          throw new InternalServerErrorException(`Erreur serveur interne: ${err}`);
-      }
+@Delete('delete/:id')
+async deletePlaceFromFavorites(
+  @Param("id", ParseUUIDPipe) id: string,
+  @Req() req: AuthRequest,
+): Promise<{ message: string }> {
+  try {
+    console.log('Deleting place with ID:', id);
+    return await this.favoritesService.deletePlaceFromFavorites(id, req.user.id);
+  } catch (err) {
+    if (err instanceof ConflictException || err instanceof UnauthorizedException) {
+      throw err;
+    }
+    throw new InternalServerErrorException(`Erreur serveur interne: ${err}`);
   }
+}
 }
