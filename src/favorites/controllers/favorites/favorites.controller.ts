@@ -168,13 +168,14 @@ export class FavoritesController {
    * @returns Un message de confirmation ou une erreur en cas d'échec.
    */
   @UseGuards(AuthGuard, RefreshMiddleware)
-@Delete('delete/:id')
+@Delete('delete/:placeId')
 async deletePlaceFromFavorites(
-  @Param("id", ParseUUIDPipe) id: string,
+  @Param("placeId", ParseUUIDPipe) id: string,
   @Req() req: AuthRequest,
 ): Promise<{ message: string }> {
   try {
     console.log('Deleting place with ID:', id);
+    console.log("je log le req.user", req.user.id)
     return await this.favoritesService.deletePlaceFromFavorites(id, req.user.id);
   } catch (err) {
     if (err instanceof ConflictException || err instanceof UnauthorizedException) {

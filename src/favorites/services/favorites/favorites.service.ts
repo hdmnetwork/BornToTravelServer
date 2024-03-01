@@ -174,63 +174,46 @@ export class FavoritesService {
   async updateCache(referencePlace: string, foundPlaceExternalAPI: AllPlacesType){
   }
 
-  /**
- * Retourne la place favorite d'un utilisateur supprimée de ses favoris.
+ /**
+ * Supprime un lieu des favoris de l'utilisateur.
  * @param id - ID du lieu à supprimer des favoris.
  * @param userId - ID de l'utilisateur dont le lieu doit être supprimé des favoris.
- * @returns - Retourner le lieu supprimé des favoris.
+ * @returns - Retourne un message indiquant le succès de la suppression.
  */
-  async deletePlaceFromFavorites(id: string, userId: string): Promise<{ message: string }> {
-    try {
-      console.log("Attempting to delete place with ID:", id, "for user ID:", userId);
-  
-      // Check if the association exists
-      const existingAssociation: FavoritePlace = await this.favoritePlaceRepository.findOne({
-        where: { user: { id: userId }, place: { id } },
-      });
-  
-      console.log("Existing Association:", existingAssociation);
-  
-      if (!existingAssociation) {
-        console.log("Association not found. Cannot delete.");
-        throw new ConflictException(`Vous ne pouvez pas supprimer ce lieu`);
-      }
-  
-      console.log("Association found. Deleting...");
-  
-      // Remove the association
-      await this.favoritePlaceRepository.remove(existingAssociation);
-  
-      console.log("Association deleted successfully.");
-  
-      // Check if there are any remaining associations for the place
-      const remainingAssociation: FavoritePlace[] = await this.favoritePlaceRepository.find({
-        where: { place: { id } },
-      });
-  
-      console.log("Remaining Associations:", remainingAssociation);
-  
-      if (remainingAssociation.length === 0) {
-        console.log("No remaining associations. Deleting place...");
-  
-        // Remove the place if no remaining associations
-        await this.placeRepository.delete(id);
-  
-        console.log("Place deleted successfully.");
-      } else {
-        console.log("Remaining associations found. Not deleting place.");
-      }
-  
-      return { message: 'Place supprimée des favoris' };
-    } catch (err) {
-      console.error("Error during place deletion:", err);
-  
-      if (err instanceof ConflictException || err instanceof UnauthorizedException) {
-        throw err;
-      }
-  
-      throw new InternalServerErrorException(`Erreur serveur au moment de la suppression: ${err}`);
+async deletePlaceFromFavorites(id: string, userId: string): Promise<{ message: string }> {
+  try {
+    console.log("Tentative de suppression du lieu avec l'ID :", id, "pour l'utilisateur avec l'ID :", userId);
+
+    // Recherche de l'association dans la table des favoris
+    const existingAssociation: FavoritePlace = await this.favoritePlaceRepository.findOne({
+      where: { user: { id: userId }, place: { id } },
+    });
+
+    console.log("Association existante :", existingAssociation);
+
+    if (!existingAssociation) {
+      console.log("Association non trouvée. Impossible de supprimer.");
+      throw new NotFoundException(`L'association lieu-utilisateur n'a pas été trouvée.`);
     }
+
+    console.log("Association trouvée. Suppression...");
+
+    // Suppression de l'association
+    await this.favoritePlaceRepository.remove(existingAssociation);
+
+    console.log("Association supprimée avec succès.");
+
+    return { message: 'Lieu supprimé des favoris' };
+  } catch (err) {
+    console.error("Erreur lors de la suppression du lieu :", err);
+
+    if (err instanceof NotFoundException) {
+      throw err;
+    }
+
+    throw new InternalServerErrorException(`Erreur serveur lors de la suppression du lieu : ${err}`);
   }
+}
+
   
 }
